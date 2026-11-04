@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hotel Employee Policy Assistant — Sovereign RAG</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #1e40af;
+      --primary-hover: #1e3a8a;
+      --primary-soft: #eff6ff;
+      --rag-accent: #047857;
+      --rag-bg: #ecfdf5;
+      --rag-border: #a7f3d0;
+      --direct-accent: #b45309;
+      --direct-bg: #fffbeb;
+      --direct-border: #fde68a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .brand p {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .tabs {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 0.2rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 0.45rem 0.95rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--muted);
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 0.2rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      border-radius: 0.375rem;
+      cursor: pointer;
+    }
+
+    .lang-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    }
+
+    .prompt-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .prompt-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .prompt-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12);
+    }
+
+    .submit-btn {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1.35rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .examples-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .examples-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-right: 0.25rem;
+    }
+
+    .example-chip {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .example-chip:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+
+    @media (max-width: 860px) {
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+      .input-row {
+        flex-direction: column;
+      }
+    }
+
+    .result-panel {
+      display: flex;
+      flex-direction: column;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      min-height: 280px;
+    }
+
+    .result-panel.direct {
+      border-top: 4px solid var(--direct-accent);
+    }
+
+    .result-panel.grounded {
+      border-top: 4px solid var(--rag-accent);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge.no-rag {
+      background: var(--direct-bg);
+      color: var(--direct-accent);
+      border: 1px solid var(--direct-border);
+    }
+
+    .badge.with-rag {
+      background: var(--rag-bg);
+      color: var(--rag-accent);
+      border: 1px solid var(--rag-border);
+    }
+
+    .answer-box {
+      font-size: 0.94rem;
+      white-space: pre-wrap;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .placeholder-text {
+      color: var(--muted);
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .sources-section {
+      margin-top: 1.1rem;
+      padding-top: 0.85rem;
+      border-top: 1px dashed var(--border);
+    }
+
+    .sources-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 0.55rem;
+    }
+
+    .source-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.82rem;
+    }
+
+    .source-meta {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 0.2rem;
+    }
+
+    .meta-bar {
+      margin-top: 0.9rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* Rules Tab */
+    .rules-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .filter-group {
+      display: inline-flex;
+      gap: 0.4rem;
+    }
+
+    .filter-pill {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .filter-pill.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .rules-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+      gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .rules-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rule-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      padding: 1rem 1.15rem;
+    }
+
+    .rule-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.4rem;
+    }
+
+    .rule-id {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-soft);
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.3rem;
+    }
+
+    .rule-category {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .rule-title {
+      font-size: 0.96rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .rule-content {
+      font-size: 0.87rem;
+      color: #334155;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .error-banner {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <h1 id="ui-title">Hotel Employee Policy Assistant</h1>
+        <p id="ui-subtitle">Sovereign RAG • Bielik-4.5B-v3.0-Instruct (Q8_0) + EmbeddingGemma-2 (270M) + BigQuery VECTOR_SEARCH</p>
+      </div>
+      <div class="header-controls">
+        <div class="tabs">
+          <button id="tab-main-btn" class="tab-btn active" onclick="switchTab('main')">Compare RAG</button>
+          <button id="tab-rules-btn" class="tab-btn" onclick="switchTab('rules')">Hotel Rules</button>
+        </div>
+        <div class="lang-toggle" aria-label="Language selection">
+          <button id="lang-en-btn" class="lang-btn active" onclick="setLanguage('en')">EN</button>
+          <button id="lang-pl-btn" class="lang-btn" onclick="setLanguage('pl')">PL</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- MAIN TAB -->
+    <section id="tab-main">
+      <div class="card">
+        <form class="prompt-form" onsubmit="handleAsk(event)">
+          <div class="input-row">
+            <input
+              id="prompt-input"
+              type="text"
+              class="prompt-input"
+              placeholder="Ask about VIP codes (AMBER-77, SAPPHIRE-12), pet fees, or late checkout rules..."
+              required
+            />
+            <button id="submit-btn" type="submit" class="submit-btn">Ask Assistant</button>
+          </div>
+          <div class="examples-bar">
+            <span id="examples-label" class="examples-label">Example prompts:</span>
+            <div id="example-chips-container" style="display: flex; flex-wrap: wrap; gap: 0.45rem;"></div>
+          </div>
+        </form>
+        <div id="error-box" class="error-banner hidden"></div>
+        <div id="timings-bar" class="meta-bar hidden"></div>
+      </div>
+
+      <div class="results-grid">
+        <!-- Direct Model Window -->
+        <div class="result-panel direct">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span id="direct-title">Direct Model (No RAG)</span>
+            </div>
+            <span id="direct-badge" class="badge no-rag">Un-grounded LLM</span>
+          </div>
+          <div id="direct-output" class="answer-box placeholder-text">
+            Submit a question or click an example prompt above to see how the un-grounded Bielik 4.5B model responds without access to hotel policies.
+          </div>
+        </div>
+
+        <!-- Grounded Model Window -->
+        <div class="result-panel grounded">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span id="grounded-title">Grounded Model (With RAG)</span>
+            </div>
+            <span id="grounded-badge" class="badge with-rag">BigQuery VECTOR_SEARCH</span>
+          </div>
+          <div id="grounded-output" class="answer-box placeholder-text">
+            Submit a question or click an example prompt above to see how the RAG-grounded Bielik 4.5B model responds using official hotel rules retrieved from BigQuery.
+          </div>
+          <div id="sources-container" class="sources-section hidden">
+            <div id="sources-heading" class="sources-title">Retrieved BigQuery Policies (COSINE)</div>
+            <div id="sources-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RULES TAB -->
+    <section id="tab-rules" class="hidden">
+      <div class="card">
+        <div class="rules-header">
+          <div>
+            <h2 id="rules-heading" style="font-size: 1.1rem; font-weight: 700;">Stored Fictional Hotel Policies (BigQuery)</h2>
+            <p id="rules-sub" style="font-size: 0.83rem; color: var(--muted);">Embedded with embeddinggemma-2:270m and indexed for BigQuery VECTOR_SEARCH</p>
+          </div>
+          <div class="filter-group">
+            <button id="filter-all" class="filter-pill active" onclick="filterRules('all')">All (EN + PL)</button>
+            <button id="filter-en" class="filter-pill" onclick="filterRules('en')">English (EN)</button>
+            <button id="filter-pl" class="filter-pill" onclick="filterRules('pl')">Polski (PL)</button>
+          </div>
+        </div>
+        <div id="rules-container" class="rules-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let currentLang = 'en';
+    let cachedRules = [];
+    let currentRuleFilter = 'all';
+
+    const I18N = {
+      en: {
+        title: "Hotel Employee Policy Assistant",
+        subtitle: "Sovereign RAG • Bielik-4.5B-v3.0-Instruct (Q8_0) + EmbeddingGemma-2 (270M) + BigQuery VECTOR_SEARCH",
+        tabMain: "Compare RAG",
+        tabRules: "Hotel Rules",
+        placeholder: "Ask about VIP codes (AMBER-77, SAPPHIRE-12), pet fees, or late checkout rules...",
+        submitBtn: "Ask Assistant",
+        submittingBtn: "Querying Bielik & BigQuery...",
+        examplesLabel: "Example prompts:",
+        directTitle: "Direct Model (No RAG)",
+        directBadge: "Un-grounded LLM",
+        directPlaceholder: "Submit a question or click an example prompt above to see how the un-grounded Bielik 4.5B model responds without access to hotel policies.",
+        groundedTitle: "Grounded Model (With RAG)",
+        groundedBadge: "BigQuery VECTOR_SEARCH",
+        groundedPlaceholder: "Submit a question or click an example prompt above to see how the RAG-grounded Bielik 4.5B model responds using official hotel rules retrieved from BigQuery.",
+        sourcesHeading: "Retrieved BigQuery Policies (COSINE)",
+        rulesHeading: "Stored Fictional Hotel Policies (BigQuery)",
+        rulesSub: "Embedded with embeddinggemma-2:270m and stored in BigQuery for VECTOR_SEARCH",
+        examples: [
+          {
+            label: "VIP Codes (AMBER-77 & SAPPHIRE-12)",
+            prompt: "What perks and elevator PIN or butler extensions apply to VIP codes AMBER-77 and SAPPHIRE-12?"
+          },
+          {
+            label: "Pet Fees & Exemptions",
+            prompt: "How much is the nightly pet fee and deposit for a dog, who is exempt, and what welcome POS code is used?"
+          },
+          {
+            label: "Late Checkout Rules",
+            prompt: "What is the flat fee and POS override code for late checkout until 14:00, and what happens after 14:00?"
+          }
+        ]
+      },
+      pl: {
+        title: "Asystent Regulaminu Pracowniczego Hotelu",
+        subtitle: "Suwerenny RAG • Bielik-4.5B-v3.0-Instruct (Q8_0) + EmbeddingGemma-2 (270M) + BigQuery VECTOR_SEARCH",
+        tabMain: "Porównanie RAG",
+        tabRules: "Zasady Hotelowe",
+        placeholder: "Zapytaj o kody VIP (AMBER-77, SAPPHIRE-12), opłaty za zwierzęta lub późne wymeldowanie...",
+        submitBtn: "Zapytaj Asystenta",
+        submittingBtn: "Odpytywanie modelu Bielik i BigQuery...",
+        examplesLabel: "Przykładowe pytania:",
+        directTitle: "Model Bezpośredni (Bez RAG)",
+        directBadge: "Bez kontekstu",
+        directPlaceholder: "Zadaj pytanie lub kliknij przykład powyżej, aby zobaczyć odpowiedź modelu Bielik 4.5B bez dostępu do wewnętrznego regulaminu hotelu.",
+        groundedTitle: "Model Uziemiony (Z RAG)",
+        groundedBadge: "BigQuery VECTOR_SEARCH",
+        groundedPlaceholder: "Zadaj pytanie lub kliknij przykład powyżej, aby zobaczyć odpowiedź modelu Bielik 4.5B opartą na zasadach pobranych z BigQuery.",
+        sourcesHeading: "Pobrane Zasady z BigQuery (COSINE)",
+        rulesHeading: "Zapisane Zasady Hotelowe w BigQuery",
+        rulesSub: "Wektoryzacja przez embeddinggemma-2:270m oraz wyszukiwanie BigQuery VECTOR_SEARCH",
+        examples: [
+          {
+            label: "Kody VIP (AMBER-77 i SAPPHIRE-12)",
+            prompt: "Jakie przywileje, kod PIN do windy oraz numer kamerdynera przysługują gościom z kodem VIP AMBER-77 oraz SAPPHIRE-12?"
+          },
+          {
+            label: "Opłaty za zwierzęta i zwolnienia",
+            prompt: "Ile wynosi dobowa opłata sanitarna i kaucja za psa, kto jest z niej zwolniony i jaki jest kod POS pakietu powitalnego?"
+          },
+          {
+            label: "Późne wymeldowanie (Late Checkout)",
+            prompt: "Ile kosztuje późne wymeldowanie do 14:00, jaki kod POS go zatwierdza i jakie są zasady po godzinie 14:00?"
+          }
+        ]
+      }
+    };
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+      document.getElementById('lang-pl-btn').classList.toggle('active', lang === 'pl');
+
+      const t = I18N[lang];
+      document.getElementById('ui-title').textContent = t.title;
+      document.getElementById('ui-subtitle').textContent = t.subtitle;
+      document.getElementById('tab-main-btn').textContent = t.tabMain;
+      document.getElementById('tab-rules-btn').textContent = t.tabRules;
+      document.getElementById('prompt-input').placeholder = t.placeholder;
+      document.getElementById('submit-btn').textContent = t.submitBtn;
+      document.getElementById('examples-label').textContent = t.examplesLabel;
+      document.getElementById('direct-title').textContent = t.directTitle;
+      document.getElementById('direct-badge').textContent = t.directBadge;
+      document.getElementById('grounded-title').textContent = t.groundedTitle;
+      document.getElementById('grounded-badge').textContent = t.groundedBadge;
+      document.getElementById('sources-heading').textContent = t.sourcesHeading;
+      document.getElementById('rules-heading').textContent = t.rulesHeading;
+      document.getElementById('rules-sub').textContent = t.rulesSub;
+
+      const directOut = document.getElementById('direct-output');
+      if (directOut.classList.contains('placeholder-text')) {
+        directOut.textContent = t.directPlaceholder;
+      }
+      const groundedOut = document.getElementById('grounded-output');
+      if (groundedOut.classList.contains('placeholder-text')) {
+        groundedOut.textContent = t.groundedPlaceholder;
+      }
+
+      renderExampleChips();
+    }
+
+    function renderExampleChips() {
+      const container = document.getElementById('example-chips-container');
+      container.innerHTML = '';
+      I18N[currentLang].examples.forEach((ex) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'example-chip';
+        btn.textContent = ex.label;
+        btn.onclick = () => {
+          const input = document.getElementById('prompt-input');
+          input.value = ex.prompt;
+          handleAsk(new Event('submit'));
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function switchTab(tab) {
+      const isMain = tab === 'main';
+      document.getElementById('tab-main').classList.toggle('hidden', !isMain);
+      document.getElementById('tab-rules').classList.toggle('hidden', isMain);
+      document.getElementById('tab-main-btn').classList.toggle('active', isMain);
+      document.getElementById('tab-rules-btn').classList.toggle('active', !isMain);
+      if (!isMain && cachedRules.length === 0) {
+        loadRules();
+      }
+    }
+
+    async function handleAsk(event) {
+      if (event && event.preventDefault) event.preventDefault();
+      const input = document.getElementById('prompt-input');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+
+      const submitBtn = document.getElementById('submit-btn');
+      const directOut = document.getElementById('direct-output');
+      const groundedOut = document.getElementById('grounded-output');
+      const errorBox = document.getElementById('error-box');
+      const sourcesContainer = document.getElementById('sources-container');
+      const sourcesList = document.getElementById('sources-list');
+      const timingsBar = document.getElementById('timings-bar');
+
+      errorBox.classList.add('hidden');
+      timingsBar.classList.add('hidden');
+      sourcesContainer.classList.add('hidden');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = I18N[currentLang].submittingBtn;
+
+      directOut.classList.add('placeholder-text');
+      groundedOut.classList.add('placeholder-text');
+      directOut.textContent = currentLang === 'pl' ? 'Generowanie odpowiedzi bez RAG...' : 'Generating direct response (No RAG)...';
+      groundedOut.textContent = currentLang === 'pl' ? 'Wyszukiwanie w BigQuery VECTOR_SEARCH i generowanie odpowiedzi z RAG...' : 'Running BigQuery VECTOR_SEARCH and generating grounded response (With RAG)...';
+
+      try {
+        const response = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, language: currentLang, top_k: 3 })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || 'Request failed');
+        }
+
+        directOut.classList.remove('placeholder-text');
+        groundedOut.classList.remove('placeholder-text');
+        directOut.textContent = data.direct_answer || '(Empty response)';
+        groundedOut.textContent = data.grounded_answer || '(Empty response)';
+
+        if (data.retrieved_rules && data.retrieved_rules.length > 0) {
+          sourcesList.innerHTML = '';
+          data.retrieved_rules.forEach((r) => {
+            const div = document.createElement('div');
+            div.className = 'source-item';
+            div.innerHTML = `
+              <div class="source-meta">
+                <span>${r.rule_id} • ${r.title} (${r.language.toUpperCase()})</span>
+                <span>Cosine Similarity: ${(r.similarity * 100).toFixed(1)}%</span>
+              </div>
+              <div>${r.content}</div>
+            `;
+            sourcesList.appendChild(div);
+          });
+          sourcesContainer.classList.remove('hidden');
+        }
+
+        if (data.timings_ms) {
+          timingsBar.innerHTML = `
+            <span><strong>Embedding:</strong> ${data.timings_ms.embedding} ms</span>
+            <span><strong>BigQuery VECTOR_SEARCH:</strong> ${data.timings_ms.bigquery_vector_search} ms</span>
+            <span><strong>Bielik 4.5B Generation:</strong> ${data.timings_ms.llm_generation} ms</span>
+            <span><strong>Total:</strong> ${data.timings_ms.total} ms</span>
+          `;
+          timingsBar.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorBox.textContent = `Error: ${err.message}`;
+        errorBox.classList.remove('hidden');
+        directOut.textContent = '—';
+        groundedOut.textContent = '—';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = I18N[currentLang].submitBtn;
+      }
+    }
+
+    async function loadRules() {
+      const container = document.getElementById('rules-container');
+      container.innerHTML = `<div class="placeholder-text">Loading hotel rules from BigQuery...</div>`;
+      try {
+        const res = await fetch('/api/rules');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to fetch rules');
+        cachedRules = data.rules || [];
+        renderRules();
+      } catch (err) {
+        container.innerHTML = `<div class="error-banner">Failed to load rules: ${err.message}</div>`;
+      }
+    }
+
+    function filterRules(filter) {
+      currentRuleFilter = filter;
+      document.getElementById('filter-all').classList.toggle('active', filter === 'all');
+      document.getElementById('filter-en').classList.toggle('active', filter === 'en');
+      document.getElementById('filter-pl').classList.toggle('active', filter === 'pl');
+      renderRules();
+    }
+
+    function renderRules() {
+      const container = document.getElementById('rules-container');
+      const filtered = cachedRules.filter((r) => currentRuleFilter === 'all' || r.language === currentRuleFilter);
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="placeholder-text">No rules found.</div>`;
+        return;
+      }
+      container.innerHTML = '';
+      filtered.forEach((r) => {
+        const card = document.createElement('div');
+        card.className = 'rule-card';
+        card.innerHTML = `
+          <div class="rule-card-top">
+            <span class="rule-id">${r.rule_id} (${r.language.toUpperCase()})</span>
+            <span class="rule-category">${r.category} ${r.embedding_dim ? `• ${r.embedding_dim}d vector` : ''}</span>
+          </div>
+          <div class="rule-title">${r.title}</div>
+          <div class="rule-content">${r.content}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Initialize UI
+    setLanguage('en');
+  </script>
+</body>
+</html>
